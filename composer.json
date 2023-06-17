@@ -1,0 +1,17 @@
+{
+  "name": "dilve/dilve",
+  "description": "Dilve plugin",
+  "type": "project",
+  "license": "GPL",
+  "authors": [{
+      "name": "Dilve",
+      "email": "xare@katakrak.net"
+  }],
+  "minimum-stability": "dev",
+  "require": {
+    "guzzlehttp/guzzle": "7.7.x-dev"
+  },
+  "autoload": {
+      "psr-4": { "Inc\\Dilve\\": "./inc" }
+  }
+}
