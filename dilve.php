@@ -19,7 +19,7 @@ if( file_exists( dirname( __FILE__).'/vendor/autoload.php' ) ){
  * @return void
  */
 function activate_dilve(){
-  Inc\Geslib\Base\Activate::activate();
+  Inc\Dilve\Base\Activate::activate();
 }
 register_activation_hook( __FILE__, 'activate_dilve');
 
@@ -33,6 +33,6 @@ function deactivate_dilve(){
 }
 register_deactivation_hook( __FILE__, 'deactivate_dilve');
 
-if(class_exists( 'Inc\\Geslib\\Init' )) {
-  Inc\Geslib\Init::register_services();
+if(class_exists( 'Inc\\Dilve\\Init' )) {
+  Inc\Dilve\Init::register_services();
 }

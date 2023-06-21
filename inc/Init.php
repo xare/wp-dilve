@@ -1,9 +1,8 @@
 <?php
 
-namespace Inc\Geslib;
-use Inc\Geslib\Commands\GeslibHelloCommand;
-use Inc\Geslib\Commands\GeslibDeleteAllProductsCommand;
-use Inc\Geslib\Commands\GeslibDeleteAllTermsCommand;
+namespace Inc\Dilve;
+use Inc\Dilve\Commands\DilveHelloCommand;
+use Inc\Dilve\Commands\DilveScanProductsCommand;
 
 final class Init
 {
@@ -14,9 +13,8 @@ final class Init
    */
   public static function get_services():Array {
     return [
-      GeslibHelloCommand::class,
-	    GeslibDeleteAllProductsCommand::class,
-	    GeslibDeleteAllTermsCommand::class
+      DilveScanProductsCommand::class,
+      DilveHelloCommand::class,
     ];
   }
 
