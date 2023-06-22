@@ -3,6 +3,7 @@
 namespace Inc\Dilve;
 use Inc\Dilve\Commands\DilveHelloCommand;
 use Inc\Dilve\Commands\DilveScanProductsCommand;
+use Inc\Dilve\Pages\Dashboard;
 
 final class Init
 {
@@ -13,6 +14,7 @@ final class Init
    */
   public static function get_services():Array {
     return [
+      Dashboard::class,
       DilveScanProductsCommand::class,
       DilveHelloCommand::class,
     ];

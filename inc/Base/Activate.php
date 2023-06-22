@@ -13,8 +13,8 @@ namespace Inc\Dilve\Base;
 
     $default = [];
 
-    if ( !get_option('dilve')) {
-      update_option('dilve', $default);
+    if ( !get_option('dilve_settings')) {
+      update_option('dilve_settings', $default);
     }
 
       require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
