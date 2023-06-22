@@ -140,7 +140,7 @@ class DilveApi {
 						$book["short_description"] = nl2br( (string) $description->Text );
 						break;
 					case "13":
-						if ( count($book['author']) == 1 ) {
+						if ( isset($book['author']) && count($book['author']) == 1 ) {
 						$book["author"][0]["description"] = nl2br( (string) $description->Text );
 						}
 						break;
@@ -300,7 +300,11 @@ class DilveApi {
 
     foreach ($products as $product) {
         $product_id = $product->ID;
-
+		
+		// Check if a thumbnail is already set for the product
+        if (get_post_thumbnail_id($product_id)) {
+            continue; // Skip setting the featured image if already set
+        }
         set_post_thumbnail($product_id, $file_id);
     }
 }
