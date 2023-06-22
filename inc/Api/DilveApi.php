@@ -217,8 +217,7 @@ class DilveApi {
     	if (strpos($filename, 'http://') === 0 || strpos($filename, 'https://') === 0) {
       		$url = $filename;
     	} else {
-      		$url  = 'http://'.$this->url_host.
-					'/'.$this->url_path.
+      		$url  = 'http://'.$this->url_host.$this->url_path.
 					'/getResourceX.do?user='.$this->url_user.
 					'&password='.$this->url_pass;
       		$url .= '&identifier='.$isbn.
@@ -237,7 +236,7 @@ class DilveApi {
 	 */
 	function create_cover($url, $filename, $mimetype = 'image/jpeg', $force = FALSE) {
 		$current_user = wp_get_current_user();
-		$client = new Client();
+		$client = new Client(['verify' => false]);
 		var_dump($url);
 		try {
 			$response = $client->get($url);
