@@ -4,6 +4,9 @@ namespace Inc\Dilve\Api;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
+use Psr\Http\Message\ResponseInterface;
 
 class DilveApi {
 
@@ -18,7 +21,8 @@ class DilveApi {
 		$this->url_host = "www.dilve.es";
 		$this->url_path = "/dilve/dilve";
 		$this->url_user = $this->dilveSettings['dilve_user'];
-    	$this->url_pass = $this->dilveSettings['dilve_pass'];
+    	$this->url_pass = isset($this->dilveSettings['dilve_pass']) ? $this->dilveSettings['dilve_pass'] : '';
+
 	}
 
 	/**
@@ -279,9 +283,23 @@ class DilveApi {
 				echo $response->getStatusCode . ' '. $response->getReasonPhrase();
 				return;
 			}
-		} catch(ClientException $clientException) {
-			echo 'Error: ' . $clientException->getMessage();
-        	return null;
+		} catch(ConnectException $connectException) {
+			echo ': Connection error - ' . $connectException->getMessage();
+		} catch (RequestException $e) {
+			// Handle other RequestExceptions (client errors)
+			if ($e->getResponse() instanceof ResponseInterface) {
+				$statusCode = $e->getResponse()->getStatusCode();
+				if ($statusCode === 404) {
+					// Handle 404 error
+					echo 'Error: Resource not found';
+				} else {
+					// Handle other client errors
+					echo 'Error: Client error - ' . $statusCode;
+				}
+			} else {
+				// Handle other exceptions
+				echo 'Error: ' . $e->getMessage();
+			}
 		}
   }
 
