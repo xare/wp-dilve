@@ -203,6 +203,7 @@ class DilveApi {
 		} else {
 			$book = (string)$xml->error->text;
 		}
+		var_dump($book);
 		return $book;
   	}
 
