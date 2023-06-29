@@ -3,6 +3,7 @@
 namespace Inc\Dilve;
 use Inc\Dilve\Commands\DilveHelloCommand;
 use Inc\Dilve\Commands\DilveScanProductsCommand;
+use Inc\Dilve\Commands\DilveMediaCleanup;
 use Inc\Dilve\Pages\Dashboard;
 
 final class Init
@@ -17,6 +18,7 @@ final class Init
       Dashboard::class,
       DilveScanProductsCommand::class,
       DilveHelloCommand::class,
+      DilveMediaCleanup::class
     ];
   }
 
