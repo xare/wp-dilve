@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Inc\Dilve\Api;
 
@@ -32,7 +32,7 @@ class DilveApi {
 	*   ISBN code to search
 	* @return hash
 	*   hash data of book
-	*/ 
+	*/
 	public function search($isbn) {
 		$query  = 'http://'
 					.$this->url_host.$this->url_path.
@@ -49,7 +49,7 @@ class DilveApi {
 		/* var_dump($query);
 		return; */
 		$response = wp_remote_get($query);
-		
+
 		if ( is_wp_error( $response ) ) {
 			return;  // In case of error return immediately.
 		 } else {
@@ -61,19 +61,19 @@ class DilveApi {
 			   return;
 			}
 		 }
-		
+
 		if($xml->ONIXMessage->Product != NULL ) {
 			$xml_book = $xml->ONIXMessage->Product[0];
 			$book = [];
 			if ($xml_book) {
-			
+
 			//drupal_set_message(dprint_r($xml_book, 1));
-			
+
 			$book['isbn'] = $isbn;//(string)$xml_book->RecordReference;
 			$book['ean'] = (string)$xml_book->RecordReference;
 			$book['date'] = (int)$xml_book->PublicationDate;
 			$book['year'] = substr($book['date'],0, 4);
-			
+
 			#Get Price
 			foreach($xml_book->SupplyDetail->Price as $price) {
 				$book['price'] = (float)$price->PriceAmount;
@@ -88,14 +88,14 @@ class DilveApi {
 				}
 				}
 			}
-			
+
 			//Get Publisher
 			foreach ($xml_book->Publisher as $publisher) {
 				if ($publisher->NameCodeType == 02) {
 				$book['publisher'] = (string)$xml_book->Publisher->PublisherName;
 				}
 			}
-			
+
 			# Get author
 			foreach($xml_book->Contributor as $contributor) {
 				if ($contributor->ContributorRole == "A01") {
@@ -199,11 +199,11 @@ class DilveApi {
 						#print "\n-----------------------> Tipo de medio no definido (".$media->MediaFileTypeCode.") para el libro con ISBN ".$isbn."\n\n";
 					}
 				}
-			} 
+			}
 		} else {
 			$book = (string)$xml->error->text;
 		}
-		var_dump($book);
+		//var_dump($book);
 		return $book;
   	}
 
@@ -241,8 +241,8 @@ class DilveApi {
 	 */
 	function create_cover($url, $filename, $mimetype = 'image/jpeg', $force = FALSE) {
 		$current_user = wp_get_current_user();
-		$client = new Client(['verify' => false]);
-		var_dump($url);
+		$client = new Client(['verify' => false, 'timeout' => 10.0]);
+
 		try {
 			$response = $client->get($url);
 			if( $response->getStatusCode() == 200 ) {
@@ -261,7 +261,6 @@ class DilveApi {
 				if (!empty($existing_file) && file_exists($filepath) && !$force) {
 					$file_id = $existing_file[0]->ID;
 				} else {
-
 					file_put_contents($filepath, $data);
 					// Create a new attachment
 					$attachment = array(
@@ -271,61 +270,114 @@ class DilveApi {
 						'post_status' => 'inherit',
 						'guid' => wp_upload_dir()['url'] . '/portadas/' . $filename,
 					);
-	
+
 					$file_id = wp_insert_attachment($attachment, $filepath, 0);
 					if (!is_wp_error($file_id)) {
 						wp_update_attachment_metadata(
-							$file_id, 
+							$file_id,
 							wp_generate_attachment_metadata($file_id, $filepath));
 					}
 				}
 				return get_post($file_id);
 			} else {
-				echo $response->getStatusCode . ' '. $response->getReasonPhrase();
-				return;
+				$error = [
+					'statusCode' => $response->getStatusCode,
+					'message' => $response->getReasonPhrase(),
+				];
+				return json_encode($error);
 			}
 		} catch(ConnectException $connectException) {
-			echo ': Connection error - ' . $connectException->getMessage();
+			$error = ['message'=> $connectException->getMessage()];
+			error_log('Connection exception: ' . $connectException->getMessage());
+			return json_encode($error);
 		} catch (RequestException $e) {
 			// Handle other RequestExceptions (client errors)
+			error_log('Request exception: ' . $e->getMessage());
 			if ($e->getResponse() instanceof ResponseInterface) {
-				$statusCode = $e->getResponse()->getStatusCode();
-				if ($statusCode === 404) {
-					// Handle 404 error
-					echo 'Error: Resource not found';
+				$error['statusCode'] = $e->getResponse()->getStatusCode();
+				if ($error['statusCode'] === 404) {
+					$error['message'] = 'Error: Resource not found';
+					return json_encode($error);
 				} else {
 					// Handle other client errors
-					echo 'Error: Client error - ' . $statusCode;
+					$error['message'] = 'Error: Client error - ' . $error['statusCode'];
+					return json_encode($error);
 				}
 			} else {
 				// Handle other exceptions
-				echo 'Error: ' . $e->getMessage();
+				$error['message'] = 'Error: ' . $e->getMessage();
+				return json_encode($error);
 			}
 		}
-  }
+  	}
 
-  function set_featured_image_for_product($file_id, $ean) {
-    $args = array(
-        'post_type' => 'product',
-        'meta_query' => array(
-            array(
-                'key' => '_ean',
-                'value' => $ean,
-            ),
-        ),
-    );
+  	function set_featured_image_for_product($file_id, $ean) {
+		$args = array(
+			'post_type' => 'product',
+			'meta_query' => array(
+				array(
+					'key' => '_ean',
+					'value' => $ean,
+				),
+			),
+		);
 
-    $products = get_posts($args);
+    	$products = get_posts($args);
 
-    foreach ($products as $product) {
-        $product_id = $product->ID;
-		
-		// Check if a thumbnail is already set for the product
-        if (get_post_thumbnail_id($product_id)) {
-            continue; // Skip setting the featured image if already set
-        }
-        set_post_thumbnail($product_id, $file_id);
-    }
+		foreach ($products as $product) {
+			$product_id = $product->ID;
+
+			// Check if a thumbnail is already set for the product
+			if (get_post_thumbnail_id($product_id)) {
+				continue; // Skip setting the featured image if already set
+			}
+			set_post_thumbnail($product_id, $file_id);
+		}
+
 }
+	public function scanProducts() {
+		//Read all products
+		// Query for all products
+		$batch_size = (isset($_POST['batch_size']) && $_POST['batch_size'] != null) ?: -1;
+		$offset = (isset($_POST['batch_size']) && $_POST['batch_size'] != null) ?: 0;
+        $args = [
+            'status' => 'publish',
+            'limit' => $batch_size,
+			'offset' => $offset
+        ];
+        $products = wc_get_products($args);
+		$eans = [];
+		$hasMore = !empty($products);
+		$totalLines = $this->_countAllProducts();
+		$progress = 0;
+		$batch = [];
+        foreach( $products as $product ) {
+            $ean = get_post_meta( $product->get_id(), '_ean', true );
+            $book = $this->search($ean);
+            if($book && isset($book['cover_url'])) {
+                $cover_post = $this->create_cover($book['cover_url'],$ean.'.jpg');
+				if(is_object($cover_post) && isset($cover_post->ID))
+                	$this->set_featured_image_for_product($cover_post->ID, $ean);
+				else {
+					error_log('The coverpost was not properly created');
+				}
+            }
+			$progress = ( $offset / $totalLines ) * 100;
+			array_push($eans, $ean);
+        }
+		$response['hasMore'] = $hasMore;
+		$response['eans'] = $eans;
+		$response['message'] = $batch_size." books have been processed: ";
+		$response['progress'] = number_format($progress, 2)." %";
+        return json_encode( $response );
+    }
 
+	private function _countAllProducts() {
+		$args = [
+            'status' => 'publish',
+            'limit' => -1,
+        ];
+        $products = wc_get_products($args);
+		return count($products);
+	}
 }

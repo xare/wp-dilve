@@ -20,7 +20,7 @@ class DilveMediaCleanup {
      */
     public function remove_attachments() {
         global $wpdb;
-        
+
         // Get IDs of all attachment linked to a WooCommerce product
         $attachments = $wpdb->get_col(
             "SELECT pm.meta_value FROM $wpdb->postmeta pm
@@ -30,7 +30,11 @@ class DilveMediaCleanup {
         );
 
         foreach ($attachments as $attachment_id) {
-            wp_delete_attachment($attachment_id, true);
+            try {
+                wp_delete_attachment($attachment_id, true);
+            } catch (\Exception $exception) {
+                error_log("Could not delete Attachment ID :". $attachment_id. " - ". $exception->getMessage());
+            }
         }
 
         WP_CLI::success('All attachments from WooCommerce products have been removed');
@@ -43,7 +47,7 @@ class DilveMediaCleanup {
      */
     public function delete_files() {
         $dir = ABSPATH . 'wp-content/uploads/portadas';
-    
+
         foreach (glob("$dir/*") as $file) {
             var_dump( $file );
             $file_url = site_url(str_replace(ABSPATH, '', $file));
@@ -53,7 +57,7 @@ class DilveMediaCleanup {
                 wp_delete_attachment($attachment_id, true);
             }
         }
-    
+
         WP_CLI::success('All files in the directory and the associated attachment posts have been deleted');
     }
 
@@ -72,7 +76,7 @@ public function remove_unattached() {
 
     $unattached = new WP_Query($args);
 
-    if ($unattached->have_posts()) : 
+    if ($unattached->have_posts()) :
         while ($unattached->have_posts()) : $unattached->the_post();
             $id = get_the_ID();
             wp_delete_attachment($id, true);
@@ -85,7 +89,7 @@ public function remove_unattached() {
     wp_reset_postdata();
 }
 
-    
-    
+
+
 }
 

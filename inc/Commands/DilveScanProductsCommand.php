@@ -24,7 +24,7 @@ class DilveScanProductsCommand {
      *
      * ## OPTIONS
      *
-     * 
+     *
      * ## EXAMPLES
      *
      *     wp dilve scanProducts
@@ -41,7 +41,7 @@ class DilveScanProductsCommand {
         foreach( $products as $product ) {
             $ean = get_post_meta( $product->get_id(), '_ean', true );
             $book = $this->dilveApi->search($ean);
-            if($book && isset($book['cover_url'])) {
+            if( $book && isset($book['cover_url'])) {
                 $cover_post = $this->dilveApi->create_cover($book['cover_url'],$ean.'.jpg');
                 $this->dilveApi->set_featured_image_for_product($cover_post->ID, $ean);
 

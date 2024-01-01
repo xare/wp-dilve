@@ -1,6 +1,9 @@
 <?php
 
 namespace Inc\Dilve;
+
+use Inc\Dilve\Base\DilveScanProductsFormController;
+use Inc\Dilve\Base\Enqueue;
 use Inc\Dilve\Commands\DilveHelloCommand;
 use Inc\Dilve\Commands\DilveScanProductsCommand;
 use Inc\Dilve\Commands\DilveMediaCleanup;
@@ -18,7 +21,9 @@ final class Init
       Dashboard::class,
       DilveScanProductsCommand::class,
       DilveHelloCommand::class,
-      DilveMediaCleanup::class
+      DilveMediaCleanup::class,
+      DilveScanProductsFormController::class,
+      Enqueue::class
     ];
   }
 
