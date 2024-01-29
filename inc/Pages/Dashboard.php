@@ -9,6 +9,7 @@ use Inc\Dilve\Api\Callbacks\AdminCallbacks;
 class Dashboard extends BaseController {
     public $settings;
     public $pages = [];
+	public $subpages = []; // Add this line to define subpages
     public $callbacks;
 
 
@@ -16,13 +17,14 @@ class Dashboard extends BaseController {
         $this->settings = new SettingsApi();
         $this->callbacks = new AdminCallbacks();
         $this->setPages();
+		$this->setSubpages();
         $this->setSettings();
 		$this->setSections();
 		$this->setFields();
         $this->settings
 			->addPages( $this->pages )
 			->withSubPage( 'Dashboard' )
-			//->addSubPages( $this->subpages )
+			->addSubPages( $this->subpages )
 			->register();
         /* $this->storeDilve(); */
 
@@ -47,6 +49,19 @@ class Dashboard extends BaseController {
 		];
 	}
 
+	// Define this new method to add your subpages
+    public function setSubpages() {
+        $this->subpages = [
+            [
+                'parent_slug' => 'dilve', // Parent menu slug
+                'page_title' => 'Dilve Logger', // Page title
+                'menu_title' => 'Dilve Logger', // Menu title
+                'capability' => 'manage_options', // Capability
+                'menu_slug' => 'dilve_logger', // Menu slug
+                'callback' => [$this->callbacks, 'adminDilveLogger'] // Callback function, define it in AdminCallbacks class
+            ]
+        ];
+    }
     public function setSettings()
 	{
 		$args = [

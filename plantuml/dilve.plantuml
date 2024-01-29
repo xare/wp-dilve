@@ -1,0 +1,19 @@
+@startuml
+
+class DilveApi {
+    $url_host
+    $url_path
+    $cegalSettings
+    $url_user
+    $url_pass
+    ---
+    + __construct()
+    + mixed search( $isbn )
+    - string get_file_url( $filename, $isbn)
+    + mixed create_cover( $isbn )
+    + void set_featured_image_for_product( $file_id, $ean )
+    + array scanProducts( $batch_size, $offset )
+    - int _countAllProducts()
+}
+
+@enduml

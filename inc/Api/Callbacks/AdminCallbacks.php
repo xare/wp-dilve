@@ -9,8 +9,11 @@
     class AdminCallbacks extends BaseController {
 
     public function adminDashboard() {
-        
         return require_once("{$this->plugin_templates_path}/adminDashboard.php");
+    }
+
+    public function adminDilveLogger() {
+        return require_once("{$this->plugin_templates_path}/adminDilveLogger.php");
     }
 
     public function textSanitize( $input ) {

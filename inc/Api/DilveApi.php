@@ -33,7 +33,7 @@ class DilveApi {
 	* @return hash
 	*   hash data of book
 	*/
-	public function search($isbn) {
+	public function search( string $isbn ) {
 		$query  = 'http://'
 					.$this->url_host.$this->url_path.
 					'/getRecordsX.do?user='.
@@ -217,7 +217,7 @@ class DilveApi {
 	* @return string
 	*   Full URL of requested resource
 	*/
-  	private function get_file_url($filename, $isbn) {
+  	private function get_file_url( string $filename, string $isbn ): string {
     	# If URL is a DILVE reference, complete full request
     	if (strpos($filename, 'http://') === 0 || strpos($filename, 'https://') === 0) {
       		$url = $filename;
@@ -235,11 +235,13 @@ class DilveApi {
 	 * Checks if the cover exists and if it does returns the file object.
 	 * It it doesn't exists downloads it and creates the object
 	 *
-	 * @param type $url
-	 * @param type $isbn
-	 * @return type
+	 * @param string $url
+	 * @param string $filename
+	 * @param string $mimetype
+	 * @param bool $force
+	 * @return mixed
 	 */
-	function create_cover($url, $filename, $mimetype = 'image/jpeg', $force = FALSE) {
+	public function create_cover($url, $filename, $mimetype = 'image/jpeg', $force = FALSE): mixed {
 		$current_user = wp_get_current_user();
 		$client = new Client(['verify' => false, 'timeout' => 10.0]);
 
@@ -286,11 +288,11 @@ class DilveApi {
 				];
 				return json_encode($error);
 			}
-		} catch(ConnectException $connectException) {
+		} catch ( ConnectException $connectException ) {
 			$error = ['message'=> $connectException->getMessage()];
 			error_log('Connection exception: ' . $connectException->getMessage());
-			return json_encode($error);
-		} catch (RequestException $e) {
+			return json_encode( $error );
+		} catch ( RequestException $e ) {
 			// Handle other RequestExceptions (client errors)
 			error_log('Request exception: ' . $e->getMessage());
 			if ($e->getResponse() instanceof ResponseInterface) {
@@ -311,7 +313,14 @@ class DilveApi {
 		}
   	}
 
-  	function set_featured_image_for_product($file_id, $ean) {
+  	/**
+  	 * set_featured_image_for_product
+  	 *
+  	 * @param  mixed $file_id
+  	 * @param  mixed $ean
+  	 * @return void
+  	 */
+  	public function set_featured_image_for_product( $file_id, $ean ): void {
 		$args = array(
 			'post_type' => 'product',
 			'meta_query' => array(
@@ -333,8 +342,8 @@ class DilveApi {
 			}
 			set_post_thumbnail($product_id, $file_id);
 		}
+	}
 
-}
 	public function scanProducts() {
 		//Read all products
 		// Query for all products
@@ -354,9 +363,9 @@ class DilveApi {
         foreach( $products as $product ) {
             $ean = get_post_meta( $product->get_id(), '_ean', true );
             $book = $this->search($ean);
-            if($book && isset($book['cover_url'])) {
-                $cover_post = $this->create_cover($book['cover_url'],$ean.'.jpg');
-				if(is_object($cover_post) && isset($cover_post->ID))
+            if ( $book && isset($book['cover_url'] ) ) {
+                $cover_post = $this->create_cover( $book['cover_url'], $ean.'.jpg' );
+				if ( is_object( $cover_post ) && isset( $cover_post->ID ) )
                 	$this->set_featured_image_for_product($cover_post->ID, $ean);
 				else {
 					error_log('The coverpost was not properly created');

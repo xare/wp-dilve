@@ -2,6 +2,7 @@
 
 namespace Inc\Dilve;
 
+use Inc\Dilve\Base\Cron;
 use Inc\Dilve\Base\DilveScanProductsFormController;
 use Inc\Dilve\Base\Enqueue;
 use Inc\Dilve\Commands\DilveHelloCommand;
@@ -23,7 +24,8 @@ final class Init
       DilveHelloCommand::class,
       DilveMediaCleanup::class,
       DilveScanProductsFormController::class,
-      Enqueue::class
+      Enqueue::class,
+      Cron::class,
     ];
   }
 
