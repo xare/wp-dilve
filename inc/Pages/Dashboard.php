@@ -52,14 +52,30 @@ class Dashboard extends BaseController {
 	// Define this new method to add your subpages
     public function setSubpages() {
         $this->subpages = [
+			[
+                'parent_slug' => 'Dilve', // Parent menu slug
+                'page_title' => 'Dilve Logs', // Page title
+                'menu_title' => 'Dilve Logs', // Menu title
+                'capability' => 'manage_options', // Capability
+                'menu_slug' => 'dilve_logs', // Menu slug
+                'callback' => [$this->callbacks, 'adminDilveLogs'], // Callback function, define it in AdminCallbacks class
+            ],
             [
-                'parent_slug' => 'dilve', // Parent menu slug
+                'parent_slug' => 'Dilve', // Parent menu slug
                 'page_title' => 'Dilve Logger', // Page title
                 'menu_title' => 'Dilve Logger', // Menu title
                 'capability' => 'manage_options', // Capability
                 'menu_slug' => 'dilve_logger', // Menu slug
-                'callback' => [$this->callbacks, 'adminDilveLogger'] // Callback function, define it in AdminCallbacks class
-            ]
+                'callback' => [$this->callbacks, 'adminDilveLogger'], // Callback function, define it in AdminCallbacks class
+			],
+			[
+                'parent_slug' => 'Dilve', // Parent menu slug
+                'page_title' => 'Dilve Lines', // Page title
+                'menu_title' => 'Dilve Lines', // Menu title
+                'capability' => 'manage_options', // Capability
+                'menu_slug' => 'dilve_lines', // Menu slug
+                'callback' => [$this->callbacks, 'adminDilveLines'], // Callback function, define it in AdminCallbacks class
+			],
         ];
     }
     public function setSettings()

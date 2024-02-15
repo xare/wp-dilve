@@ -242,9 +242,8 @@ class DilveApi {
 	 * @return mixed
 	 */
 	public function create_cover($url, $filename, $mimetype = 'image/jpeg', $force = FALSE): mixed {
-		$current_user = wp_get_current_user();
 		$client = new Client(['verify' => false, 'timeout' => 10.0]);
-
+		$dilveApiDbLinesManager = new DilveApiDbLinesManager;
 		try {
 			$response = $client->get($url);
 			if( $response->getStatusCode() == 200 ) {
@@ -286,28 +285,34 @@ class DilveApi {
 					'statusCode' => $response->getStatusCode,
 					'message' => $response->getReasonPhrase(),
 				];
+				$dilveApiDbLinesManager->setError($filename, $error['message']);
 				return json_encode($error);
 			}
 		} catch ( ConnectException $connectException ) {
 			$error = ['message'=> $connectException->getMessage()];
 			error_log('Connection exception: ' . $connectException->getMessage());
+			$dilveApiDbLinesManager->setError($filename, 'Connection exception: ' . $connectException->getMessage());
 			return json_encode( $error );
 		} catch ( RequestException $e ) {
 			// Handle other RequestExceptions (client errors)
 			error_log('Request exception: ' . $e->getMessage());
+
 			if ($e->getResponse() instanceof ResponseInterface) {
 				$error['statusCode'] = $e->getResponse()->getStatusCode();
 				if ($error['statusCode'] === 404) {
 					$error['message'] = 'Error: Resource not found';
+					$dilveApiDbLinesManager->setError($filename, 'Connection exception: ' . $e->getMessage());
 					return json_encode($error);
 				} else {
 					// Handle other client errors
 					$error['message'] = 'Error: Client error - ' . $error['statusCode'];
+					$dilveApiDbLinesManager->setError($filename, 'Connection exception: ' . $error['message']);
 					return json_encode($error);
 				}
 			} else {
 				// Handle other exceptions
 				$error['message'] = 'Error: ' . $e->getMessage();
+				$dilveApiDbLinesManager->setError($filename, 'Error: ' . $error['message']);
 				return json_encode($error);
 			}
 		}

@@ -3,6 +3,7 @@
 namespace Inc\Dilve;
 
 use Inc\Dilve\Base\Cron;
+use Inc\Dilve\Base\DilveLogController;
 use Inc\Dilve\Base\DilveScanProductsFormController;
 use Inc\Dilve\Base\Enqueue;
 use Inc\Dilve\Commands\DilveHelloCommand;
@@ -20,6 +21,7 @@ final class Init
   public static function get_services():Array {
     return [
       Dashboard::class,
+      DilveLogController::class,
       DilveScanProductsCommand::class,
       DilveHelloCommand::class,
       DilveMediaCleanup::class,

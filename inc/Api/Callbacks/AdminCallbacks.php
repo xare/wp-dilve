@@ -12,6 +12,14 @@
         return require_once("{$this->plugin_templates_path}/adminDashboard.php");
     }
 
+    public function adminDilveLogs() {
+        return require_once("{$this->plugin_templates_path}/adminDilveLogs.php");
+    }
+
+    public function adminDilveLines() {
+        return require_once("{$this->plugin_templates_path}/adminDilveLines.php");
+    }
+
     public function adminDilveLogger() {
         return require_once("{$this->plugin_templates_path}/adminDilveLogger.php");
     }

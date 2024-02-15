@@ -3,10 +3,8 @@ use Inc\dilve\Api\DilveLoggerListTable;
 ?>
 
 <div class="wrap">
-  <h1>Dilve DASHBOARD</h1>
-   <?php
-   // Display any errors in a div.
-   settings_errors(); ?>
+  <h1>Dilve LOGGER</h1>
+   <?php settings_errors(); ?>
    <?php
       global $wpdb;
       $loggerTable = $wpdb->prefix . 'dilve_logger'; // Replace with your actual table name
