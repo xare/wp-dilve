@@ -26,18 +26,40 @@ class DilveApiDbLinesManager extends DilveApiDbManager {
             $attempts // scanned_products
 		];
 		$insertArray = array_combine(self::$dilveLinesKeys, $dilveLinesValues);
+
+        //check if the line already exists and then decide whether INSERT or UPDATE
+        $line_id = $this->getLineId($isbn);
+        if( $line_id ) {
+            $table_name = $wpdb->prefix.self::DILVE_LINES_TABLE; // Replace with your actual table name if different
+            $sql = "UPDATE $table_name SET attempts = attempts + 1 WHERE id = $line_id";
+            $wpdb->query($sql);
+            return $line_id;
 		try {
-			$wpdb->insert($wpdb->prefix . self::DILVE_LINES_TABLE,
+            if( $line_id ) {
+                $sql = "UPDATE $table_name SET attempts = attempts + 1 WHERE id = $line_id";
+                $wpdb->query($sql);
+                return $line_id;
+            } else {
+                $wpdb->insert($wpdb->prefix . self::DILVE_LINES_TABLE,
 						$insertArray,
 						['%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d']);
-            return $wpdb->insert_id;
+                return $wpdb->insert_id;
+            }
+
 		} catch (\Exception $e) {
             wp_error('This line has not been properly inserted into the database due to an error: '.$e->getMessage());
             return false;
         }
 	}
 
-    public function setError( int $filename, string $error ) {
+    /**
+     * setError
+     *
+     * @param  string $filename
+     * @param  string $error
+     * @return void
+     */
+    public function setError( string $filename, string $error ) {
         global $wpdb;
         $id = $this->getLineId($filename);
 

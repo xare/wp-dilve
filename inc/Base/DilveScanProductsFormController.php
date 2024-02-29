@@ -5,6 +5,8 @@
 namespace Inc\Dilve\Base;
 
 use Inc\Dilve\Api\DilveApi;
+use Inc\Dilve\Api\DilveApiDbLogManager;
+use Inc\Dilve\Api\DilveApiDbManager;
 use Inc\Dilve\Base\BaseController;
 
 /**
@@ -54,7 +56,12 @@ class DilveScanProductsFormController extends BaseController
         check_ajax_referer('dilve_scan_products_form', 'dilve_nonce');
         update_option('dilve_admin_notice', 'File Checked!');
         $dilveApi = new DilveApi;
-        $response = $dilveApi->scanProducts();
+        $dilveApiDbManager = new DilveApiDbManager;
+        $dilveApiDbLogManager = new DilveApiDbLogManager;
+        $batch_size = 10;
+        $totalLines = $dilveApiDbManager->countAllProducts();
+        $log_id = $dilveApiDbLogManager->insertLogData('logged', $totalLines);
+        $response = $dilveApi->scanProducts($log_id);
         wp_send_json_success($response);
     }
 

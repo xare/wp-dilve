@@ -3,6 +3,7 @@ namespace Inc\Dilve\Api;
 
 use WP_List_Table;
 use Inc\Dilve\Api\DilveApiDbManager;
+use Inc\Dilve\Api\DilveApiDbLoggerManager;
 
 class DilveLoggerListTable extends WP_List_Table {
 

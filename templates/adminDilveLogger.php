@@ -1,5 +1,5 @@
 <?php
-use Inc\dilve\Api\DilveLoggerListTable;
+use Inc\Dilve\Api\DilveLoggerListTable;
 ?>
 
 <div class="wrap">

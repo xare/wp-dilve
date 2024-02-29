@@ -46,8 +46,7 @@ class DilveApi {
 		#$query .= '&metadataformat=CEGAL&version=3&formatdetail=C';
 		# By default responses are UTF-8 encoded, but force it
 		$query .= '&encoding=UTF-8';
-		/* var_dump($query);
-		return; */
+
 		$response = wp_remote_get($query);
 
 		if ( is_wp_error( $response ) ) {
@@ -203,7 +202,7 @@ class DilveApi {
 		} else {
 			$book = (string)$xml->error->text;
 		}
-		//var_dump($book);
+
 		return $book;
   	}
 
@@ -231,6 +230,53 @@ class DilveApi {
     	return $url;
   	}
 
+	public function fetch_cover(string $url, string $isbn ) {
+		$client = new Client(['verify' => false, 'timeout' => 10.0]);
+		$dilveApiDbLinesManager = new DilveApiDbLinesManager;
+		try {
+			$response = $client->get($url);
+		} catch( ConnectException $connectException ) {
+			$error = ['message'=> $connectException->getMessage()];
+			error_log( 'Connection exception: ' . $connectException->getMessage() );
+			$dilveApiDbLinesManager->setError( $isbn, $error['message'] );
+			return false;
+		} catch ( RequestException $requestException ) {
+			error_log( 'Request exception: ' . $requestException->getMessage() );
+			if ($requestException->getResponse() instanceof ResponseInterface) {
+				$error['statusCode'] = $requestException->getResponse()->getStatusCode();
+				if ( $error['statusCode'] === 404 ) {
+					$error['message'] = 'Error: Resource not found';
+				} else {
+					// Handle other client errors
+					$error['message'] = 'Error: Client error - ' . $error['statusCode'];
+				}
+			} else {
+				// Handle other exceptions
+				$error['message'] = 'Error: ' . $e->getMessage();
+			}
+			error_log($error['message']);
+			$dilveApiDbLinesManager->setError( $isbn, $error['message'] );
+			return false;
+		} catch (\Exception $exception) {
+			$error['message'] = 'Error: ' . $exception->getMessage();
+			error_log($error['message']);
+			$dilveApiDbLinesManager->setError( $isbn, $error['message'] );
+			return false;
+		}
+		if ( isset( $response->errors ) && count( $response->errors ) > 0 ) {
+			var_dump( $response->errors );
+			$errorString = '';
+			foreach($response->errors as $error) {
+				$errorString .= ' ' . $error;
+			}
+			$dilveApiDbLinesManager->setError( $isbn, $errorString );
+			return false;
+		}
+		if( $response->getStatusCode() == 200 ) {
+			return $response->getBody();
+		}
+	}
+
 	/**
 	 * Checks if the cover exists and if it does returns the file object.
 	 * It it doesn't exists downloads it and creates the object
@@ -241,142 +287,89 @@ class DilveApi {
 	 * @param bool $force
 	 * @return mixed
 	 */
-	public function create_cover($url, $filename, $mimetype = 'image/jpeg', $force = FALSE): mixed {
-		$client = new Client(['verify' => false, 'timeout' => 10.0]);
-		$dilveApiDbLinesManager = new DilveApiDbLinesManager;
-		try {
-			$response = $client->get($url);
-			if( $response->getStatusCode() == 200 ) {
-				$data = $response->getBody();
-				//Primero intentamos cargar la imagen de la base de datos
-				$filepath = sprintf("%s/portadas/%s", wp_upload_dir()['basedir'], $filename);
-				// First, check if the image exists in the database
-				$existing_file = get_posts([
-					'post_type' => 'attachment',
-					'post_status' => 'inherit',
-					'meta_key' => '_wp_attached_file',
-					'meta_value' => 'portadas/' . $filename,
-					'posts_per_page' => 1,
-				]);
-				//Si existe comprobamos que efectivamente el archivo está. Si no lo creamos
-				if (!empty($existing_file) && file_exists($filepath) && !$force) {
-					$file_id = $existing_file[0]->ID;
-				} else {
-					file_put_contents($filepath, $data);
-					// Create a new attachment
-					$attachment = array(
-						'post_mime_type' => $mimetype,
-						'post_title' => $filename,
-						'post_content' => '',
-						'post_status' => 'inherit',
-						'guid' => wp_upload_dir()['url'] . '/portadas/' . $filename,
-					);
+	public function create_cover(string $url, string $filename, string $mimetype = 'image/jpeg', bool $force = FALSE): mixed {
+		$isbn = explode('.', $filename)[0];
+		$data = $this->fetch_cover($url, $isbn);
+		//Primero intentamos cargar la imagen de la base de datos
+		$filepath = sprintf("%s/portadas/%s", wp_upload_dir()['basedir'], $filename);
+		// First, check if the image exists in the database
+		$existing_file = get_posts([
+			'post_type' => 'attachment',
+			'post_status' => 'inherit',
+			'meta_key' => '_wp_attached_file',
+			'meta_value' => 'portadas/' . $filename,
+			'posts_per_page' => 1,
+		]);
+		//Si existe comprobamos que efectivamente el archivo está. Si no lo creamos
+		if (!empty($existing_file) && file_exists($filepath) && !$force) {
+			$file_id = $existing_file[0]->ID;
+		} else {
+			file_put_contents($filepath, $data);
+			// Create a new attachment
+			$attachment = array(
+				'post_mime_type' => $mimetype,
+				'post_title' => $filename,
+				'post_content' => '',
+				'post_status' => 'inherit',
+				'guid' => wp_upload_dir()['url'] . '/portadas/' . $filename,
+			);
 
-					$file_id = wp_insert_attachment($attachment, $filepath, 0);
-					if (!is_wp_error($file_id)) {
-						wp_update_attachment_metadata(
-							$file_id,
-							wp_generate_attachment_metadata($file_id, $filepath));
-					}
-				}
-				return get_post($file_id);
-			} else {
-				$error = [
-					'statusCode' => $response->getStatusCode,
-					'message' => $response->getReasonPhrase(),
-				];
-				$dilveApiDbLinesManager->setError($filename, $error['message']);
-				return json_encode($error);
-			}
-		} catch ( ConnectException $connectException ) {
-			$error = ['message'=> $connectException->getMessage()];
-			error_log('Connection exception: ' . $connectException->getMessage());
-			$dilveApiDbLinesManager->setError($filename, 'Connection exception: ' . $connectException->getMessage());
-			return json_encode( $error );
-		} catch ( RequestException $e ) {
-			// Handle other RequestExceptions (client errors)
-			error_log('Request exception: ' . $e->getMessage());
-
-			if ($e->getResponse() instanceof ResponseInterface) {
-				$error['statusCode'] = $e->getResponse()->getStatusCode();
-				if ($error['statusCode'] === 404) {
-					$error['message'] = 'Error: Resource not found';
-					$dilveApiDbLinesManager->setError($filename, 'Connection exception: ' . $e->getMessage());
-					return json_encode($error);
-				} else {
-					// Handle other client errors
-					$error['message'] = 'Error: Client error - ' . $error['statusCode'];
-					$dilveApiDbLinesManager->setError($filename, 'Connection exception: ' . $error['message']);
-					return json_encode($error);
-				}
-			} else {
-				// Handle other exceptions
-				$error['message'] = 'Error: ' . $e->getMessage();
-				$dilveApiDbLinesManager->setError($filename, 'Error: ' . $error['message']);
-				return json_encode($error);
+			$file_id = wp_insert_attachment($attachment, $filepath, 0);
+			if (!is_wp_error($file_id)) {
+				wp_update_attachment_metadata(
+					$file_id,
+					wp_generate_attachment_metadata($file_id, $filepath));
 			}
 		}
+		return get_post($file_id);
   	}
 
-  	/**
-  	 * set_featured_image_for_product
-  	 *
-  	 * @param  mixed $file_id
-  	 * @param  mixed $ean
-  	 * @return void
-  	 */
-  	public function set_featured_image_for_product( $file_id, $ean ): void {
-		$args = array(
-			'post_type' => 'product',
-			'meta_query' => array(
-				array(
-					'key' => '_ean',
-					'value' => $ean,
-				),
-			),
-		);
 
-    	$products = get_posts($args);
+	public function scanProducts($log_id, $batch_size = 0, $offset = -1) {
+		$dilveApiDbManager = new DilveApiDbManager;
+        $dilveApiDbLogManager = new DilveApiDbLogManager;
+        $dilveApiDbLinesManager = new DilveApiDbLinesManager;
 
-		foreach ($products as $product) {
-			$product_id = $product->ID;
+		// Read all products.
+		// Query for all products.
+		$batch_size = (isset($_POST['batch_size']) && $_POST['batch_size'] != null) ? $_POST['batch_size'] : -1;
+		$offset = (isset($_POST['offset']) && $_POST['offset'] != null) ? $_POST['offset']: 0;
+		$args = [
+				'status' => 'publish',
+				'limit' => $batch_size,
+				'offset' => $offset
+		];
 
-			// Check if a thumbnail is already set for the product
-			if (get_post_thumbnail_id($product_id)) {
-				continue; // Skip setting the featured image if already set
-			}
-			set_post_thumbnail($product_id, $file_id);
-		}
-	}
-
-	public function scanProducts() {
-		//Read all products
-		// Query for all products
-		$batch_size = (isset($_POST['batch_size']) && $_POST['batch_size'] != null) ?: -1;
-		$offset = (isset($_POST['batch_size']) && $_POST['batch_size'] != null) ?: 0;
-        $args = [
-            'status' => 'publish',
-            'limit' => $batch_size,
-			'offset' => $offset
-        ];
-        $products = wc_get_products($args);
+		$products = wc_get_products($args);
 		$eans = [];
 		$hasMore = !empty($products);
 		$totalLines = $this->_countAllProducts();
 		$progress = 0;
-		$batch = [];
+
         foreach( $products as $product ) {
             $ean = get_post_meta( $product->get_id(), '_ean', true );
             $book = $this->search($ean);
+			$filepath = sprintf("%s/portadas/%s", wp_upload_dir()['basedir'], $ean.'.jpg');
             if ( $book && isset($book['cover_url'] ) ) {
-                $cover_post = $this->create_cover( $book['cover_url'], $ean.'.jpg' );
-				if ( is_object( $cover_post ) && isset( $cover_post->ID ) )
-                	$this->set_featured_image_for_product($cover_post->ID, $ean);
-				else {
+				$line_id = $dilveApiDbLinesManager->insertLinesData($log_id, $ean, $filepath);
+				if ( $dilveApiDbManager->hasAttachment( $product->get_id() ) ) {
+                    $dilveApiDbLinesManager->setError( $ean, 'This product has already a cover.' );
+                    continue;
+                }
+				$dilveApiDbLinesManager->set_origin_url($line_id, $book['cover_url']);
+                $dilveApiDbLinesManager->setBook($product->get_title(), $product->get_id(), $line_id);
+                if ($cover_post = $this->create_cover( $book['cover_url'], $ean.'.jpg' )) {
+					$dilveApiDbManager->set_featured_image_for_product($cover_post->ID, $ean);
+                    $dilveApiDbLinesManager->set_url_target($line_id, $product->get_id());
+				} else {
 					error_log('The coverpost was not properly created');
 				}
             }
+			$dilveApiDbLogManager->setLogStatus($log_id, 'processed');
+			$response[] = [ 'id' => $product->get_id() ];
+			error_log('Offset now: '. $offset );
 			$progress = ( $offset / $totalLines ) * 100;
+			error_log('Progress now: '. $progress );
 			array_push($eans, $ean);
         }
 		$response['hasMore'] = $hasMore;
@@ -386,12 +379,12 @@ class DilveApi {
         return json_encode( $response );
     }
 
-	private function _countAllProducts() {
+	private function _countAllProducts(): int {
 		$args = [
             'status' => 'publish',
             'limit' => -1,
         ];
         $products = wc_get_products($args);
-		return count($products);
+		return (int) count($products);
 	}
 }

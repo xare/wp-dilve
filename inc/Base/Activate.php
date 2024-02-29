@@ -29,7 +29,7 @@ namespace Inc\Dilve\Base;
     $dilve_log_sql = "CREATE TABLE $dilve_log_table_name (
       id mediumint(9) NOT NULL AUTO_INCREMENT,
       `start_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      `end_date` datetime NULL DEFAULT,
+      `end_date` datetime NULL DEFAULT NULL,
       `status` varchar(255) NOT NULL,
       `scanned_items` mediumint(9) NOT NULL,
       `processed_items` mediumint(9) NOT NULL,
