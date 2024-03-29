@@ -2,6 +2,8 @@
 
 namespace Inc\Dilve\Api;
 
+use WP_Query;
+
 class DilveApiDbManager {
     const DILVE_LOG_TABLE = 'dilve_log';
     const DILVE_LINES_TABLE = 'dilve_lines';
@@ -96,6 +98,48 @@ class DilveApiDbManager {
 	}
 
     /**
+     * set_dilve_url
+     *
+     * @param  mixed $ean
+     * @param  mixed $url
+     * @return bool
+     */
+    public function set_dilve_url(string $ean, string $url): bool {
+        $args = [
+			'post_type' => 'product',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+			'meta_query' => [
+				[
+					'key' => '_ean',
+					'value' => $ean,
+                    'compare' => '=',
+                ],
+            ],
+        ];
+    	$query = new WP_Query($args);
+		if ($query->have_posts()) {
+            $query->the_post();
+            // Get the product object
+            $product_id = get_the_ID();
+            $product = wc_get_product($product_id); // Return the product ID
+            if ($product && get_post_meta($product_id, '_ean', true)) {
+                // Update the 'dilve_url' custom field
+                try {
+                    update_post_meta($product_id, 'dilve_url', $url);
+                    return true;
+                } catch (\Exception $e) {
+                    error_log('Failed to update the dilve_url custom field: '.$e->getMessage());
+                    return false;
+                }
+            }
+            return false;
+        } else {
+            return false; // No product found with the given EAN
+        }
+    }
+
+    /**
      * countAllProducts
      *
      * @return int
@@ -106,4 +150,36 @@ class DilveApiDbManager {
             'limit' => -1,
         ]));
 	}
+
+    /**
+     * DilveApiDbManager->insertAttachment
+     * Inserts the file to the file manager.
+     *
+     * @param  string $filename
+     * @param  string $filepath
+     * @return mixed
+     */
+    public function insertAttachment( string $filename, string $filepath ): mixed {
+        $args = [
+            'post_mime_type' => 'image/jpeg',
+            'post_title' => 'PORTADA: '. $filename,
+            'post_content' => 'PORTADA: '. $filepath . $filename,
+            'post_status' => 'inherit',
+            'guid' => wp_upload_dir()[ 'baseurl' ] . '/portadas/' . $filename,
+            'post_modified' => current_time('mysql'),
+            'post_modified_gmt' => get_gmt_from_date(current_time('mysql')),
+        ];
+
+        try {
+            $attachment_id = wp_insert_attachment( $args, $filepath, 0 );
+
+            wp_update_attachment_metadata(
+                $attachment_id,
+                wp_generate_attachment_metadata( $attachment_id, $filepath ) );
+            return $attachment_id ;
+        } catch(\Exception $exception) {
+            error_log( "Exception: ".$exception->getMessage() );
+            return 0;
+        }
+    }
 }

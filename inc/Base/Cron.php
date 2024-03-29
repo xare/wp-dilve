@@ -23,11 +23,12 @@ class Cron extends BaseController {
      * @return void
      */
     function dilveCron() {
+        include_once( ABSPATH . 'wp-admin/includes/image.php' );
         $batch_size = 6;
         $dilveApi = new DilveApi;
         $dilveApiDbManager = new DilveApiDbManager;
         $dilveApiDbLogManager = new DilveApiDbLogManager;
-        error_log('Start Cron '. date('Y-m-d') );
+        //error_log('Start Cron '. date('Y-m-d') );
         $totalLines = $dilveApiDbManager->countAllProducts();
         $log_id = $dilveApiDbLogManager->insertLogData('logged', $totalLines);
         do {

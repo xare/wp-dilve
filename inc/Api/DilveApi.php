@@ -316,9 +316,11 @@ class DilveApi {
 
 			$file_id = wp_insert_attachment($attachment, $filepath, 0);
 			if (!is_wp_error($file_id)) {
-				wp_update_attachment_metadata(
-					$file_id,
-					wp_generate_attachment_metadata($file_id, $filepath));
+				$attachmentdata = wp_generate_attachment_metadata($file_id, $filepath);
+				if( !wp_update_attachment_metadata($file_id, $attachmentdata) ){
+					error_log('Error updating attachment metadata. for file id: '. $file_id);
+					return false;
+				};
 			}
 		}
 		return get_post($file_id);
@@ -361,9 +363,11 @@ class DilveApi {
                 if ($cover_post = $this->create_cover( $book['cover_url'], $ean.'.jpg' )) {
 					$dilveApiDbManager->set_featured_image_for_product($cover_post->ID, $ean);
                     $dilveApiDbLinesManager->set_url_target($line_id, $product->get_id());
+					error_log('The coverpost was properly created');
 				} else {
 					error_log('The coverpost was not properly created');
 				}
+				$dilveApiDbManager->set_dilve_url($ean, $book['cover_url']);
             }
 			$dilveApiDbLogManager->setLogStatus($log_id, 'processed');
 			$response[] = [ 'id' => $product->get_id() ];

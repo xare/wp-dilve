@@ -27,7 +27,7 @@ class DilveApiDbLogManager extends DilveApiDbManager {
 						['%s', '%s', '%s', '%d', '%d']);
             return $wpdb->insert_id;
 		} catch (\Exception $e) {
-			echo "This line has not been properly inserted into the database due to an error: ".$e->getMessage();
+			error_log("This line has not been properly inserted into the database due to an error: ".$e->getMessage());
             return false;
         }
 	}

@@ -14,6 +14,7 @@ class DilveApiDbLinesManager extends DilveApiDbManager {
                         int $attempts = 0
                           ) :mixed {
 		global $wpdb;
+        $table_name = $wpdb->prefix.self::DILVE_LINES_TABLE; // Replace with your actual table name if different
 		$dilveLinesValues = [
 			$log_id,
             $isbn,
@@ -29,11 +30,6 @@ class DilveApiDbLinesManager extends DilveApiDbManager {
 
         //check if the line already exists and then decide whether INSERT or UPDATE
         $line_id = $this->getLineId($isbn);
-        if( $line_id ) {
-            $table_name = $wpdb->prefix.self::DILVE_LINES_TABLE; // Replace with your actual table name if different
-            $sql = "UPDATE $table_name SET attempts = attempts + 1 WHERE id = $line_id";
-            $wpdb->query($sql);
-            return $line_id;
 		try {
             if( $line_id ) {
                 $sql = "UPDATE $table_name SET attempts = attempts + 1 WHERE id = $line_id";
@@ -47,7 +43,7 @@ class DilveApiDbLinesManager extends DilveApiDbManager {
             }
 
 		} catch (\Exception $e) {
-            wp_error('This line has not been properly inserted into the database due to an error: '.$e->getMessage());
+            error_log('This line has not been properly inserted into the database due to an error: '.$e->getMessage());
             return false;
         }
 	}
